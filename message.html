@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Leave a Birthday Message</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body class="formpage">
+  <main class="form-card">
+    <h2 class="form-title">Write your warm wishes</h2>
+    <p class="form-note">A simple birthday message form for friends, family, and anyone who wants to leave a memory.</p>
+
+    <form id="wishForm" class="wish-form">
+      <label for="name">Name</label>
+      <input type="text" id="name" name="name" required />
+
+      <label for="message">Birthday Message</label>
+      <textarea id="message" name="message" required></textarea>
+
+      <button type="submit" class="btn">Submit</button>
+    </form>
+
+    <p class="bottom-note">Thank you for being part of Zaya’s golden birthday memory.</p>
+
+    <div id="thankYou" class="thank-you hidden">
+      <h3>Thank you for your warm wishes ✨</h3>
+      <p>Your message has been received.</p>
+    </div>
+  </main>
+
+  <!-- 1. مكتبة Supabase -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+  <!-- 2. كود الربط والمعالجة -->
+  <script>
+    // استبدل هذه المفاتيح بمفاتيح مشروعك من Supabase (من Project Settings > API)
+    const SUPABASE_URL = "YOUR_SUPABASE_URL";
+    const SUPABASE_ANON_KEY = "YOUR_SUPABASE_ANON_KEY";
+
+    // تهيئة الربط مع Supabase
+    const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+    const form = document.getElementById("wishForm");
+    const thankYou = document.getElementById("thankYou");
+
+    form.addEventListener("submit", async function (e) {
+      e.preventDefault();
+
+      // تغيير حالة الزر أثناء الإرسال
+      const submitBtn = form.querySelector('button[type="submit"]');
+      submitBtn.disabled = true;
+      submitBtn.textContent = "Sending...";
+
+      const name = document.getElementById("name").value;
+      const message = document.getElementById("message").value;
+
+      // إرسال البيانات لجدول wishes في Supabase
+      const { data, error } = await supabaseClient
+        .from('wishes')
+        .insert([{ name: name, message: message }]);
+
+      if (error) {
+        alert("حدث خطأ أثناء إرسال أمنيتك، يرجى المحاولة لاحقاً!");
+        console.error(error);
+        submitBtn.disabled = false;
+        submitBtn.textContent = "Submit";
+      } else {
+        // في حال النجاح، إخفاء النموذج وإظهار رسالة الشكر
+        form.classList.add("hidden");
+        thankYou.classList.remove("hidden");
+      }
+    });
+  </script>
+</body>
+</html>
