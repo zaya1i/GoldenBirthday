@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Admin - Zaya's Wishes</title>
+  <link rel="stylesheet" href="style.css" />
+  <style>
+    /* تنسيقات خاصة بصفحة الأدمن */
+    .admin-container {
+      max-width: 800px;
+      margin: 40px auto;
+      padding: 20px;
+    }
+    .login-box {
+      background: rgba(255, 251, 242, 0.9);
+      padding: 30px;
+      border-radius: 20px;
+      border: 1px solid rgba(76, 51, 36, 0.12);
+      text-align: center;
+      max-width: 400px;
+      margin: 100px auto;
+      box-shadow: 0 10px 30px rgba(76, 51, 36, 0.1);
+    }
+    .login-box input {
+      margin: 15px 0;
+      text-align: center;
+      letter-spacing: 2px;
+    }
+    .wishes-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: 20px;
+      margin-top: 20px;
+    }
+    .wish-card {
+      background: rgba(255, 251, 242, 0.9);
+      border: 1px solid rgba(76, 51, 36, 0.15);
+      border-radius: 16px;
+      padding: 20px;
+      box-shadow: 0 6px 18px rgba(76, 51, 36, 0.08);
+      position: relative;
+    }
+    .wish-name {
+      font-weight: bold;
+      color: var(--brown);
+      font-size: 1.2rem;
+      margin-bottom: 5px;
+      border-bottom: 1px dashed var(--gold);
+      padding-bottom: 5px;
+    }
+    .wish-date {
+      font-size: 0.8rem;
+      color: var(--soft-brown);
+      margin-bottom: 12px;
+    }
+    .wish-message {
+      color: var(--brown);
+      line-height: 1.6;
+      white-space: pre-wrap;
+    }
+    .header-flex {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
+    }
+  </style>
+</head>
+<body class="formpage">
+
+  <!-- صندوق تسجيل الدخول -->
+  <div id="loginBox" class="login-box">
+    <h2 class="form-title">Owner Access</h2>
+    <p class="form-note">Please enter your secret PIN to view wishes</p>
+    <input type="password" id="pinInput" placeholder="Enter PIN" />
+    <button class="btn" onclick="checkPin()">Access</button>
+  </div>
+
+  <!-- لوحة عرض الرسائل -->
+  <div id="adminPanel" class="admin-container hidden">
+    <div class="header-flex">
+      <h2 class="title" style="font-size: 2rem;">Zaya's Wishes 💌</h2>
+      <button class="btn" onclick="fetchWishes()">Refresh 🔄</button>
+    </div>
+
+    <div id="wishesList" class="wishes-grid">
+      <!-- سيتم تحميل الرسائل هنا تلقائياً -->
+    </div>
+  </div>
+
+  <!-- مكتبة Supabase -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+  <script>
+    // تعيين الرقم السري الخاص بكِ (يمكنكِ تغييره هنا)
+    const SECRET_PIN = "1234";
+
+    const SUPABASE_URL = "https://ukkyrmsxqtepkbsyeleo.supabase.co";
+    const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVra3lybXN4cXRlcGtic3llbGVvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODQ1NTg5MjYsImV4cCI6MjEwMDEzNDkyNn0.YdQkAMR-97JusYj4-w-iZ_8nMLBrHsdwm36zlxp6Cn4";
+
+    const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+    function checkPin() {
+      const pin = document.getElementById("pinInput").value;
+      if (pin === SECRET_PIN) {
+        document.getElementById("loginBox").classList.add("hidden");
+        document.getElementById("adminPanel").classList.remove("hidden");
+        fetchWishes();
+      } else {
+        alert("Wrong PIN! Try again.");
+      }
+    }
+
+    async function fetchWishes() {
+      const container = document.getElementById("wishesList");
+      container.innerHTML = "<p>Loading wishes...</p>";
+
+      // جلب جميع الرسائل مرتبة من الأحدث إلى الأقدم
+      const { data: wishes, error } = await supabaseClient
+        .from('wishes')
+        .select('*')
+        .order('id', { ascending: false });
+
+      if (error) {
+        console.error(error);
+        container.innerHTML = "<p>Error loading wishes.</p>";
+        return;
+      }
+
+      if (!wishes || wishes.length === 0) {
+        container.innerHTML = "<p>No wishes received yet ✨</p>";
+        return;
+      }
+
+      container.innerHTML = "";
+      wishes.forEach(wish => {
+        const date = new Date(wish.created_at).toLocaleDateString('en-US', {
+          year: 'numeric',
+          month: 'short',
+          day: 'numeric',
+          hour: '2-digit',
+          minute: '2-digit'
+        });
+
+        const card = document.createElement("div");
+        card.className = "wish-card";
+        card.innerHTML = `
+          <div class="wish-name">${escapeHtml(wish.name)}</div>
+          <div class="wish-date">${date}</div>
+          <div class="wish-message">${escapeHtml(wish.message)}</div>
+        `;
+        container.appendChild(card);
+      });
+    }
+
+    function escapeHtml(str) {
+      return str ? str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;") : '';
+    }
+  </script>
+</body>
+</html>
